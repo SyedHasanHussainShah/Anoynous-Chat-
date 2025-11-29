@@ -18,6 +18,7 @@ export default function App() {
   const [messages, setMessages] = useState([])
   const inputRef = useRef(null)
   const listRef = useRef(null)
+  
 
   useEffect(() => {
     const s = io(BACKEND_URL, { transports: ['websocket'] })
@@ -62,6 +63,8 @@ export default function App() {
       s.disconnect()
     }
   }, [])
+
+  
 
   useEffect(() => {
     if (listRef.current) {

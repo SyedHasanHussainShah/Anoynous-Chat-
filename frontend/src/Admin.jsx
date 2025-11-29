@@ -11,6 +11,7 @@ export default function Admin() {
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [connected, setConnected] = useState(false)
   const [error, setError] = useState('')
+  
 
   useEffect(() => {
   }, [])
@@ -46,6 +47,8 @@ export default function Admin() {
       setLoading(false)
     }
   }
+
+  
 
   const connectAdmin = async () => {
     const k = key.trim()
