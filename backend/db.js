@@ -26,6 +26,8 @@ const insertBanStmt = db.prepare('INSERT OR IGNORE INTO banned_ips (ip_address, 
 const listBansStmt = db.prepare('SELECT id, ip_address, reason, timestamp FROM banned_ips ORDER BY timestamp DESC');
 const deleteBanStmt = db.prepare('DELETE FROM banned_ips WHERE ip_address = ?');
 const insertLogStmt = db.prepare('INSERT INTO chat_logs (room_id, sender, message) VALUES (?, ?, ?)');
+const listLogsByRoomStmt = db.prepare('SELECT room_id, sender, message, timestamp FROM chat_logs WHERE room_id = ? ORDER BY id DESC LIMIT ?');
+const listLogsRecentStmt = db.prepare('SELECT room_id, sender, message, timestamp FROM chat_logs ORDER BY id DESC LIMIT ?');
 
 function isIpBanned(ip) {
   try {
@@ -47,11 +49,16 @@ function getBannedIps() {
   return listBansStmt.all();
 }
 
-function logMessage(roomId, sender, message, enabled) {
-  if (!enabled) return;
+function logMessage(roomId, sender, message) {
   try {
     insertLogStmt.run(roomId, sender, message);
   } catch (e) {}
+}
+
+function getLogs(roomId, limit=50) {
+  const lim = Number(limit) || 50;
+  if (roomId) return listLogsByRoomStmt.all(roomId, lim);
+  return listLogsRecentStmt.all(lim);
 }
 
 module.exports = {
@@ -60,5 +67,5 @@ module.exports = {
   unbanIp,
   getBannedIps,
   logMessage,
+  getLogs,
 };
-

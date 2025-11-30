@@ -11,6 +11,9 @@ export default function Admin() {
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [connected, setConnected] = useState(false)
   const [error, setError] = useState('')
+  const [selectedRoom, setSelectedRoom] = useState('')
+  const [logs, setLogs] = useState([])
+  const [logsLoading, setLogsLoading] = useState(false)
   
 
   useEffect(() => {
@@ -45,6 +48,23 @@ export default function Admin() {
       setConnected(false)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchLogs = async () => {
+    if (!connected) return
+    try {
+      setLogsLoading(true)
+      const params = new URLSearchParams()
+      params.set('key', key)
+      if (selectedRoom) params.set('room_id', selectedRoom)
+      params.set('limit', '100')
+      const res = await fetch(`${BACKEND_URL}/admin/logs?${params.toString()}`)
+      if (!res.ok) return
+      const data = await res.json()
+      setLogs(Array.isArray(data.logs) ? data.logs : [])
+    } finally {
+      setLogsLoading(false)
     }
   }
 
@@ -219,6 +239,41 @@ export default function Admin() {
                       </tbody>
                     </table>
                   </div>
+                </div>
+              </div>
+
+              <div className="mt-6 bg-slate-800 border border-slate-700 rounded p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="font-medium">Room Messages</div>
+                </div>
+                
+                <div className="flex items-end gap-3">
+                  <div className="flex-1">
+                    <div className="text-sm text-slate-400">Select room</div>
+                    <select value={selectedRoom} onChange={(e)=>setSelectedRoom(e.target.value)} className="w-full border border-slate-700 rounded px-3 py-2 bg-slate-900">
+                      <option value="">All rooms</option>
+                      {status?.active_rooms?.map(r => (
+                        <option key={r.room_id} value={r.room_id}>{r.room_id}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <button disabled={logsLoading} onClick={fetchLogs} className="px-4 py-2 bg-slate-700 rounded">{logsLoading ? 'Loading...' : 'Load messages'}</button>
+                </div>
+                <div className="mt-4 max-h-[40vh] overflow-y-auto modern-scroll">
+                  {logs?.length ? (
+                    <ul className="space-y-2 text-sm">
+                      {logs.map((l, i) => (
+                        <li key={i} className="flex gap-3">
+                          <span className="text-slate-400 font-mono">{l.room_id}</span>
+                          <span className="px-2 py-0.5 rounded bg-slate-700 text-slate-200">{l.sender}</span>
+                          <span className="flex-1">{l.message}</span>
+                          <span className="text-slate-400">{l.timestamp}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="text-slate-400">No messages</div>
+                  )}
                 </div>
               </div>
             </>

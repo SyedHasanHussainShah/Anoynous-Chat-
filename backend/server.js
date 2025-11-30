@@ -170,7 +170,7 @@ io.on('connection', (socket) => {
     if (!info) return;
     const senderRole = info.user1.id === socket.id ? 'user1' : 'user2';
     const timestamp = new Date().toISOString();
-    db.logMessage(roomId, senderRole, text, ENABLE_LOGS);
+    db.logMessage(roomId, senderRole, text);
     io.to(roomId).emit('message', { from: senderRole, text, timestamp });
   });
 
@@ -252,6 +252,13 @@ app.post('/admin/unban', requireAdmin, (req, res) => {
   if (!ip) return res.status(400).json({ error: 'ip required' });
   db.unbanIp(ip);
   res.json({ ok: true });
+});
+
+app.get('/admin/logs', requireAdmin, (req, res) => {
+  const roomId = String(req.query.room_id || '').trim() || null;
+  const limit = Number(req.query.limit || 50);
+  const logs = db.getLogs(roomId, limit);
+  res.json({ logs });
 });
 
 let currentPort = PORT;
