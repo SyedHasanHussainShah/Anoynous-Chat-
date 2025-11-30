@@ -18,6 +18,7 @@ export default function App() {
   const [messages, setMessages] = useState([])
   const inputRef = useRef(null)
   const listRef = useRef(null)
+  const [notice, setNotice] = useState('')
   
 
   useEffect(() => {
@@ -33,13 +34,6 @@ export default function App() {
         setSearching(false)
         setConnected(true)
       }
-      if (text.includes('disconnected')) {
-        alert('Stranger disconnected.')
-        setConnected(false)
-        setRoomId(null)
-        setRole(null)
-        setSearching(false)
-      }
     })
 
     s.on('paired', ({ roomId, role }) => {
@@ -52,7 +46,10 @@ export default function App() {
     })
 
     s.on('chat_ended', ({ reason }) => {
-      alert('Chat ended')
+      const msg = reason === 'user_request'
+        ? 'You disconnected. Click Start Chat to find a new stranger.'
+        : 'Stranger disconnected. Click Start Chat to find a new stranger.'
+      setNotice(msg)
       setConnected(false)
       setRoomId(null)
       setRole(null)
@@ -72,8 +69,19 @@ export default function App() {
     }
   }, [messages])
 
+  useEffect(() => {
+    if (!notice) return
+    const t = setTimeout(() => setNotice(''), 5000)
+    return () => clearTimeout(t)
+  }, [notice])
+
   const startChat = () => {
     setMessages([])
+    setNotice('')
+    setRoomId(null)
+    setRole(null)
+    setSearching(true)
+    if (socket && !socket.connected) socket.connect()
     socket?.emit('start_chat')
   }
 
@@ -86,6 +94,11 @@ export default function App() {
 
   const disconnect = () => {
     socket?.emit('disconnect_request')
+    setNotice('You disconnected. Click Start Chat to find a new stranger.')
+    setConnected(false)
+    setRoomId(null)
+    setRole(null)
+    setSearching(false)
   }
 
   return (
@@ -101,6 +114,9 @@ export default function App() {
           <div className="max-w-5xl mx-auto h-full px-6">
             <div className="h-full flex items-center justify-center">
               <div className="relative w-full max-w-md">
+                {notice && (
+                  <div className="mb-4 bg-slate-800 border border-slate-700 rounded p-3 text-center text-slate-200">{notice}</div>
+                )}
                 <div className="absolute inset-0 blur-3xl bg-gradient-to-tr from-blue-600/20 via-indigo-600/10 to-cyan-500/10 rounded-xl" aria-hidden></div>
                 <div className="relative bg-slate-900/60 backdrop-blur border border-slate-700 rounded-2xl p-8 shadow-xl">
                   <div className="flex items-center gap-3 mb-3">
@@ -142,7 +158,7 @@ export default function App() {
         <main className="flex-1">
           <div className="max-w-5xl mx-auto w-full px-6">
             <div className="bg-slate-800 border border-slate-700 rounded-lg p-4 h-[65vh] flex flex-col">
-              <div ref={listRef} className="flex-1 overflow-y-auto space-y-2">
+              <div ref={listRef} className="flex-1 overflow-y-auto space-y-2 modern-scroll">
                 {messages.map((m, idx) => (
                   m.type === 'system' ? (
                     <SystemMessage key={idx} text={m.text} />
